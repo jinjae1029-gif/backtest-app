@@ -1,0 +1,41 @@
+name: Daily Stock Data Update
+
+on:
+  schedule:
+    # 매일 한국 시간 오전 8시 (UTC 23:00) 실행
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write # 저장소 쓰기 권한 부여
+
+    steps:
+    - name: 저장소 체크아웃 (Checkout Code)
+      uses: actions/checkout@v3
+
+    - name: 파이썬 설정 (Setup Python)
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: 라이브러리 설치 (Install Dependencies)
+      run: |
+        pip install -r requirements.txt
+
+    - name: 데이터 업데이트 스크립트 실행 (Run Update Script)
+      run: |
+        python fetch_real_data.py
+
+    - name: 변경 사항 저장 및 커밋 (Commit and Push)
+      run: |
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'action@github.com'
+        git add js/data.js
+        # 변경사항이 있을 때만 커밋
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update stock data [$(date)]" && git push)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
